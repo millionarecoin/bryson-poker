@@ -43,7 +43,7 @@ EXCLUDE_DESCRIPTION_KEYWORDS = [
     "SNP Chairs",
     "Payment",
     "Table and chairs",
-    "Poker table"
+    "Poker table", "Beer", "Copag Cards", "Cards", "cards", "Cake", "cake", "Pakoda", "Poker mat"
 ]
 
 OUTPUT_DIR = Path("outputs")
