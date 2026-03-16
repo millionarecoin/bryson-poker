@@ -50,7 +50,8 @@ EXCLUDE_DESCRIPTION_KEYWORDS = [
 ]
 
 # OUTPUT_DIR = Path("outputs")
-OUTPUT_DIR = "/www/var/poker/outputs"
+from pathlib import Path
+OUTPUT_DIR = Path("/www/var/poker/outputs")
 BASE_URL = "https://secure.splitwise.com/api/v3.0"
 
 HEADERS = {"Authorization": f"Bearer {SPLITWISE_API_KEY}"}
