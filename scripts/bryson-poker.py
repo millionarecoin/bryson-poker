@@ -235,16 +235,28 @@ def write_json(yearly, weekly_winners, weekly, raw):
     path = OUTPUT_DIR / f"splitwise_leaderboard_{TARGET_YEAR}_{ts}.json"
     latest_path = OUTPUT_DIR / "splitwise_leaderboard_latest.json"
 
+    # Format winnings columns to 2 decimals in all tables
+    def format_money(df, cols):
+        for col in cols:
+            if col in df:
+                df[col] = df[col].map(lambda x: f"{x:.2f}" if pd.notnull(x) else x)
+        return df
+
+    yearly_fmt = format_money(yearly.copy(), ["winnings"])
+    weekly_winners_fmt = format_money(weekly_winners.copy(), ["top_winnings"])
+    weekly_fmt = format_money(weekly.copy(), ["winnings"])
+    raw_fmt = format_money(raw.copy(), ["winnings"])
+
     payload = {
         "info": {
             "status": "ok",
             "generated_at": datetime.now().isoformat(),
             "excluded_keywords": ", ".join(EXCLUDE_DESCRIPTION_KEYWORDS),
         },
-        "yearly": yearly.to_dict(orient="records") if yearly is not None else [],
-        "weekly_winners": weekly_winners.to_dict(orient="records") if weekly_winners is not None else [],
-        "weekly": weekly.to_dict(orient="records") if weekly is not None else [],
-        "raw": raw.to_dict(orient="records") if raw is not None else [],
+        "yearly": yearly_fmt.to_dict(orient="records") if yearly is not None else [],
+        "weekly_winners": weekly_winners_fmt.to_dict(orient="records") if weekly_winners is not None else [],
+        "weekly": weekly_fmt.to_dict(orient="records") if weekly is not None else [],
+        "raw": raw_fmt.to_dict(orient="records") if raw is not None else [],
     }
 
     with open(path, "w", encoding="utf-8") as fh:
