@@ -277,7 +277,7 @@ def write_xlsx(yearly, weekly_winners, weekly, raw):
 def write_json(yearly, weekly_winners, weekly, raw):
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = OUTPUT_DIR / f"splitwise_leaderboard_{TARGET_YEAR}_{ts}.json"
+    path = OUTPUT_DIR / f"splitwise_leaderboard_latest.json"
     latest_path = OUTPUT_DIR / "splitwise_leaderboard_latest.json"
 
     # Format winnings columns to 2 decimals in all tables
