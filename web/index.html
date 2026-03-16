@@ -122,9 +122,9 @@
         const data = await resp.json();
         let html = '';
         // All-Time Leaderboard (from 2024) at the top
-      //  if (data.alltime && Array.isArray(data.alltime) && data.alltime.length > 0) {
-       //   html += renderTable('All-Time Leaderboard (from 2024)', data.alltime, ['rank', 'player', 'winnings']);
-       // }
+        if (data.alltime && Array.isArray(data.alltime) && data.alltime.length > 0) {
+          html += renderTable('All-Time Leaderboard (from 2024)', data.alltime, ['rank', 'player', 'winnings']);
+        }
         html += renderTable('Yearly Leaderboard', data.yearly, ['rank', 'player', 'winnings']);
         html += renderTable('Weekly Winners', data.weekly_winners, ['week_label', 'winner', 'top_winnings']);
         html += renderTable('Weekly Totals', data.weekly, ['week_label', 'week_rank', 'player', 'winnings']);

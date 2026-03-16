@@ -34,7 +34,7 @@ from dateutil import parser as dateparser
 # PowerShell: setx SPLITWISE_API_KEY "your_key_here"
 SPLITWISE_API_KEY = os.getenv("SPLITWISE_API_KEY") or "f8xBSXMD8T3iYa51JzSuGMpMFbATund2I2vweKjc"
 
-GROUP_ID = 70730375
+GROUP_IDS = [70730375, 83889064]
 TARGET_YEAR = 2026
 
 # Exclude these from calculations (case-insensitive substring match)
@@ -43,12 +43,12 @@ EXCLUDE_DESCRIPTION_KEYWORDS = [
     "poker mat",
     "SNP Chairs",
     "Payment",
+    "Pizza",
     "Table and chairs",
     "Poker table", "Beer", "Copag Cards", "Cards", "cards", "Cake", "cake", "Pakoda", "Poker mat"
 ]
 
-# OUTPUT_DIR = Path("outputs")
-OUTPUT_DIR = Path("/var/www/poker/outputs")
+OUTPUT_DIR = Path("outputs")
 BASE_URL = "https://secure.splitwise.com/api/v3.0"
 
 HEADERS = {"Authorization": f"Bearer {SPLITWISE_API_KEY}"}
@@ -58,11 +58,11 @@ HEADERS = {"Authorization": f"Bearer {SPLITWISE_API_KEY}"}
 # SPLITWISE API
 # -----------------------------
 
+
 def fetch_group_expenses(group_id: int) -> List[dict]:
     expenses = []
     offset = 0
     limit = 100
-
     while True:
         resp = requests.get(
             f"{BASE_URL}/get_expenses",
@@ -72,14 +72,25 @@ def fetch_group_expenses(group_id: int) -> List[dict]:
         )
         resp.raise_for_status()
         data = resp.json().get("expenses", [])
-
         if not data:
             break
-
         expenses.extend(data)
         offset += limit
-
     return expenses
+
+def fetch_all_group_expenses(group_ids: list) -> list:
+    all_expenses = []
+    for gid in group_ids:
+        all_expenses.extend(fetch_group_expenses(gid))
+    # Remove duplicates by expense id (if any overlap)
+    seen = set()
+    unique_expenses = []
+    for exp in all_expenses:
+        eid = exp.get("id")
+        if eid not in seen:
+            unique_expenses.append(exp)
+            seen.add(eid)
+    return unique_expenses
 
 
 # -----------------------------
@@ -279,8 +290,8 @@ def write_json(yearly, weekly_winners, weekly, raw):
     raw_fmt = format_money(raw.copy(), ["winnings"])
 
 
-    # Compute all-time leaderboard from 2024
-    all_expenses = fetch_group_expenses(GROUP_ID)
+    # Compute all-time leaderboard from 2024 (combined groups)
+    all_expenses = fetch_all_group_expenses(GROUP_IDS)
     all_df = parse_expenses_alltime(all_expenses)
     all_df = all_df[all_df['date'].dt.year >= 2024]
     alltime_yearly, _, _ = compute_leaderboards(all_df)
@@ -312,11 +323,12 @@ def write_json(yearly, weekly_winners, weekly, raw):
 # MAIN
 # -----------------------------
 
+
 def main():
     if not SPLITWISE_API_KEY or SPLITWISE_API_KEY == "PASTE_YOUR_KEY_HERE":
         raise RuntimeError("Set SPLITWISE_API_KEY env var or paste the key in the script temporarily.")
 
-    expenses = fetch_group_expenses(GROUP_ID)
+    expenses = fetch_all_group_expenses(GROUP_IDS)
     print(f"Fetched {len(expenses)} expenses (before filtering)")
 
     df = parse_expenses(expenses)
