@@ -20,6 +20,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import List
+import json
 
 import requests
 import pandas as pd
@@ -223,6 +224,29 @@ def write_xlsx(yearly, weekly_winners, weekly, raw):
         weekly_winners.to_excel(w, sheet_name="Weekly Winners", index=False)
         weekly.to_excel(w, sheet_name="Weekly Totals", index=False)
         raw.to_excel(w, sheet_name="Raw Rows", index=False)
+
+    return path
+
+
+def write_json(yearly, weekly_winners, weekly, raw):
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = OUTPUT_DIR / f"splitwise_leaderboard_{TARGET_YEAR}_{ts}.json"
+
+    payload = {
+        "info": {
+            "status": "ok",
+            "generated_at": datetime.now().isoformat(),
+            "excluded_keywords": ", ".join(EXCLUDE_DESCRIPTION_KEYWORDS),
+        },
+        "yearly": yearly.to_dict(orient="records") if yearly is not None else [],
+        "weekly_winners": weekly_winners.to_dict(orient="records") if weekly_winners is not None else [],
+        "weekly": weekly.to_dict(orient="records") if weekly is not None else [],
+        "raw": raw.to_dict(orient="records") if raw is not None else [],
+    }
+
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, indent=2, ensure_ascii=False, default=str)
 
     return path
 
