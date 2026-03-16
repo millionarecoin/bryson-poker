@@ -100,21 +100,9 @@
 
 
     // Auto-discover latest JSON file in /outputs/ (requires /outputs/ to be HTTP-accessible and directory listing enabled)
-    async function findLatestJson() {
-      // This requires Apache/nginx directory listing enabled for /outputs/
-      try {
-        const resp = await fetch('/outputs/');
-        const text = await resp.text();
-        // Parse links to .json files
-        const matches = [...text.matchAll(/href=["']([^"']+\.json)["']/g)].map(m => m[1]);
-        if (!matches.length) return null;
-        // Sort by filename (timestamp in name)
-        matches.sort();
-        return '/outputs/' + matches[matches.length - 1];
-      } catch (e) {
-        return null;
-      }
-    }
+
+    // Always fetch the latest JSON file (no directory listing required)
+    const LATEST_JSON = '/outputs/splitwise_leaderboard_latest.json';
 
     function renderTable(title, rows, columns) {
       if (!rows.length) return '';
@@ -127,11 +115,7 @@
 
     async function loadLeaderboard() {
       const container = document.getElementById('leaderboard-content');
-      const jsonUrl = await findLatestJson();
-      if (!jsonUrl) {
-        container.innerHTML = '<p>No leaderboard JSON found in <strong>outputs/</strong> (directory listing required).</p>';
-        return;
-      }
+      const jsonUrl = LATEST_JSON;
       try {
         const resp = await fetch(jsonUrl);
         if (!resp.ok) throw new Error('Not found');

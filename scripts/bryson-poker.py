@@ -232,6 +232,7 @@ def write_json(yearly, weekly_winners, weekly, raw):
     OUTPUT_DIR.mkdir(exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = OUTPUT_DIR / f"splitwise_leaderboard_{TARGET_YEAR}_{ts}.json"
+    latest_path = OUTPUT_DIR / "splitwise_leaderboard_latest.json"
 
     payload = {
         "info": {
@@ -246,6 +247,9 @@ def write_json(yearly, weekly_winners, weekly, raw):
     }
 
     with open(path, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, indent=2, ensure_ascii=False, default=str)
+    # Always write/copy latest
+    with open(latest_path, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2, ensure_ascii=False, default=str)
 
     return path
