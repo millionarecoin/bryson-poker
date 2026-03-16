@@ -41,4 +41,5 @@ jobs:
             mkdir -p /var/www/poker/data
             chown -R www-data:www-data /var/www/poker
             chmod -R 755 /var/www/poker
+            python3 /opt/poker/bryson-poker.py
           EOF
