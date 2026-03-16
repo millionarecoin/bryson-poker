@@ -272,8 +272,10 @@ def main():
 
     yearly, weekly_winners, weekly = compute_leaderboards(df)
     out = write_xlsx(yearly, weekly_winners, weekly, df)
+    json_out = write_json(yearly, weekly_winners, weekly, df)
 
     print(f"✅ Done. Created {out}")
+    print(f"✅ JSON created: {json_out}")
     print(f"Kept rows: {len(df)} (after filtering)")
 
 if __name__ == "__main__":
