@@ -89,9 +89,64 @@
   </header>
 
   <!-- Pages uses static files from outputs/; populate tables manually or via script -->
+
   <main>
-    <p>No leaderboard loaded. Run the script to generate an XLSX in <strong>outputs/</strong>.</p>
+    <div id="leaderboard-content">
+      <p>Loading leaderboard data...</p>
+    </div>
   </main>
+
+  <script>
+
+
+    // Auto-discover latest JSON file in /outputs/ (requires /outputs/ to be HTTP-accessible and directory listing enabled)
+    async function findLatestJson() {
+      // This requires Apache/nginx directory listing enabled for /outputs/
+      try {
+        const resp = await fetch('/outputs/');
+        const text = await resp.text();
+        // Parse links to .json files
+        const matches = [...text.matchAll(/href=["']([^"']+\.json)["']/g)].map(m => m[1]);
+        if (!matches.length) return null;
+        // Sort by filename (timestamp in name)
+        matches.sort();
+        return '/outputs/' + matches[matches.length - 1];
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function renderTable(title, rows, columns) {
+      if (!rows.length) return '';
+      let thead = '<thead><tr>' + columns.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+      let tbody = '<tbody>' + rows.map(row =>
+        '<tr>' + columns.map(c => `<td>${row[c] ?? ''}</td>`).join('') + '</tr>'
+      ).join('') + '</tbody>';
+      return `<section class="section"><h2>${title}</h2><table>${thead}${tbody}</table></section>`;
+    }
+
+    async function loadLeaderboard() {
+      const container = document.getElementById('leaderboard-content');
+      const jsonUrl = await findLatestJson();
+      if (!jsonUrl) {
+        container.innerHTML = '<p>No leaderboard JSON found in <strong>outputs/</strong> (directory listing required).</p>';
+        return;
+      }
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) throw new Error('Not found');
+        const data = await resp.json();
+        let html = '';
+        html += renderTable('Yearly Leaderboard', data.yearly, ['rank', 'player', 'winnings']);
+        html += renderTable('Weekly Winners', data.weekly_winners, ['week_label', 'winner', 'top_winnings']);
+        html += renderTable('Weekly Totals', data.weekly, ['week_label', 'week_rank', 'player', 'winnings']);
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = `<p>Error loading leaderboard data from <strong>${jsonUrl}</strong>.</p>`;
+      }
+    }
+    window.addEventListener('DOMContentLoaded', loadLeaderboard);
+  </script>
 
   <footer>
     <div>Repository: bryson-poker</div>
