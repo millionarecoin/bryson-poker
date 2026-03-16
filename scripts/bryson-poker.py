@@ -35,8 +35,8 @@ from dateutil import parser as dateparser
 SPLITWISE_API_KEY = os.getenv("SPLITWISE_API_KEY") or "f8xBSXMD8T3iYa51JzSuGMpMFbATund2I2vweKjc"
 
 GROUP_IDS = [70730375, 83889064]
-GROUP_IDS = [83889064]
-TARGET_YEAR = 2025
+#GROUP_IDS = [83889064]
+TARGET_YEAR = 2026
 
 # Exclude these from calculations (case-insensitive substring match)
 EXCLUDE_DESCRIPTION_KEYWORDS = [
