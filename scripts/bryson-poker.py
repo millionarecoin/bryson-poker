@@ -247,6 +247,13 @@ def write_json(yearly, weekly_winners, weekly, raw):
     weekly_fmt = format_money(weekly.copy(), ["winnings"])
     raw_fmt = format_money(raw.copy(), ["winnings"])
 
+    # Compute all-time leaderboard from 2024
+    all_expenses = fetch_group_expenses(GROUP_ID)
+    all_df = parse_expenses(all_expenses)
+    all_df = all_df[all_df['date'].dt.year >= 2024]
+    alltime_yearly, _, _ = compute_leaderboards(all_df)
+    alltime_yearly_fmt = format_money(alltime_yearly.copy(), ["winnings"])
+
     payload = {
         "info": {
             "status": "ok",
@@ -257,6 +264,7 @@ def write_json(yearly, weekly_winners, weekly, raw):
         "weekly_winners": weekly_winners_fmt.to_dict(orient="records") if weekly_winners is not None else [],
         "weekly": weekly_fmt.to_dict(orient="records") if weekly is not None else [],
         "raw": raw_fmt.to_dict(orient="records") if raw is not None else [],
+        "alltime": alltime_yearly_fmt.to_dict(orient="records") if not alltime_yearly_fmt.empty else [],
     }
 
     with open(path, "w", encoding="utf-8") as fh:
