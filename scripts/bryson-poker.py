@@ -106,27 +106,24 @@ def should_exclude_expense(exp: dict) -> bool:
 # TRANSFORM
 # -----------------------------
 
-def parse_expenses(expenses: List[dict]) -> pd.DataFrame:
-    rows = []
 
+def parse_expenses(expenses: List[dict]) -> pd.DataFrame:
+    """
+    Parse expenses for the TARGET_YEAR only (default behavior for yearly/weekly leaderboards).
+    """
+    rows = []
     for exp in expenses:
         if should_exclude_expense(exp):
             continue
-
         dt = dateparser.parse(exp["date"])
         if dt.year != TARGET_YEAR:
             continue
-
         desc = exp.get("description", "")
-
-        # Each expense has users with paid_share & owed_share
         for u in exp.get("users", []):
             user_obj = u.get("user", {}) or {}
             first = (user_obj.get("first_name") or "").strip()
             last = (user_obj.get("last_name") or "").strip()
             full = f"{first} {last}".strip()
-
-            # Fallbacks if last name is missing
             name = (
                 full
                 if full
@@ -134,12 +131,9 @@ def parse_expenses(expenses: List[dict]) -> pd.DataFrame:
                      or user_obj.get("email")
                      or "Unknown"
             )
-
             paid = float(u.get("paid_share", 0) or 0)
             owed = float(u.get("owed_share", 0) or 0)
-
             net = paid - owed  # positive = won money
-
             if net != 0:
                 rows.append(
                     {
@@ -149,7 +143,44 @@ def parse_expenses(expenses: List[dict]) -> pd.DataFrame:
                         "expense": desc,
                     }
                 )
+    return pd.DataFrame(rows)
 
+
+# All-time parser: does NOT filter by year
+def parse_expenses_alltime(expenses: List[dict]) -> pd.DataFrame:
+    """
+    Parse expenses for all years (for all-time leaderboard).
+    """
+    rows = []
+    for exp in expenses:
+        if should_exclude_expense(exp):
+            continue
+        dt = dateparser.parse(exp["date"])
+        desc = exp.get("description", "")
+        for u in exp.get("users", []):
+            user_obj = u.get("user", {}) or {}
+            first = (user_obj.get("first_name") or "").strip()
+            last = (user_obj.get("last_name") or "").strip()
+            full = f"{first} {last}".strip()
+            name = (
+                full
+                if full
+                else user_obj.get("name")
+                     or user_obj.get("email")
+                     or "Unknown"
+            )
+            paid = float(u.get("paid_share", 0) or 0)
+            owed = float(u.get("owed_share", 0) or 0)
+            net = paid - owed  # positive = won money
+            if net != 0:
+                rows.append(
+                    {
+                        "date": pd.Timestamp(dt),   # timezone fixed later
+                        "player": str(name).strip(),
+                        "winnings": net,
+                        "expense": desc,
+                    }
+                )
     return pd.DataFrame(rows)
 
 
@@ -247,9 +278,10 @@ def write_json(yearly, weekly_winners, weekly, raw):
     weekly_fmt = format_money(weekly.copy(), ["winnings"])
     raw_fmt = format_money(raw.copy(), ["winnings"])
 
+
     # Compute all-time leaderboard from 2024
     all_expenses = fetch_group_expenses(GROUP_ID)
-    all_df = parse_expenses(all_expenses)
+    all_df = parse_expenses_alltime(all_expenses)
     all_df = all_df[all_df['date'].dt.year >= 2024]
     alltime_yearly, _, _ = compute_leaderboards(all_df)
     alltime_yearly_fmt = format_money(alltime_yearly.copy(), ["winnings"])
