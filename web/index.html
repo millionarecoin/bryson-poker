@@ -61,6 +61,18 @@
       margin-top: 40px;
     }
 
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 880px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
     footer {
       text-align: center;
       font-size: 12px;
