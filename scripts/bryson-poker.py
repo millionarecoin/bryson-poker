@@ -6,6 +6,14 @@ Splitwise Poker Leaderboard for 2025
 - Excludes:
   - "settle all balances"
   - "poker mat"
+"""
+Splitwise Poker Leaderboard for 2025
+- Uses Splitwise Bearer token
+- Pulls expenses from ONE group
+- Computes net winnings per player
+- Excludes:
+  - "settle all balances"
+  - "poker mat"
   - (optional) Splitwise payment/settlement-type rows if present
 - Outputs:
   - Yearly leaderboard
@@ -19,7 +27,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import requests
 import pandas as pd
@@ -34,7 +42,7 @@ from dateutil import parser as dateparser
 SPLITWISE_API_KEY = os.getenv("SPLITWISE_API_KEY") or "f8xBSXMD8T3iYa51JzSuGMpMFbATund2I2vweKjc"
 
 GROUP_ID = 70730375
-TARGET_YEAR = 2026
+TARGET_YEAR = 2025
 
 # Exclude these from calculations (case-insensitive substring match)
 EXCLUDE_DESCRIPTION_KEYWORDS = [
@@ -43,7 +51,7 @@ EXCLUDE_DESCRIPTION_KEYWORDS = [
     "SNP Chairs",
     "Payment",
     "Table and chairs",
-    "Poker table", "Copag cards", "Beer", "Food", "Drinks", "Cake", "Cards", "Pakoda"
+    "Poker table"
 ]
 
 OUTPUT_DIR = Path("outputs")
@@ -104,7 +112,7 @@ def should_exclude_expense(exp: dict) -> bool:
 # TRANSFORM
 # -----------------------------
 
-def parse_expenses(expenses: List[dict], target_year: Optional[int] = TARGET_YEAR) -> pd.DataFrame:
+def parse_expenses(expenses: List[dict]) -> pd.DataFrame:
     rows = []
 
     for exp in expenses:
@@ -112,7 +120,7 @@ def parse_expenses(expenses: List[dict], target_year: Optional[int] = TARGET_YEA
             continue
 
         dt = dateparser.parse(exp["date"])
-        if target_year is not None and dt.year != target_year:
+        if dt.year != TARGET_YEAR:
             continue
 
         desc = exp.get("description", "")
@@ -205,7 +213,7 @@ def compute_leaderboards(df: pd.DataFrame):
 # OUTPUT
 # -----------------------------
 
-def write_xlsx(yearly, weekly_winners, weekly, raw, alltime_yearly=None, alltime_weekly_winners=None, alltime_weekly=None, raw_all=None):
+def write_xlsx(yearly, weekly_winners, weekly, raw):
     OUTPUT_DIR.mkdir(exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = OUTPUT_DIR / f"splitwise_leaderboard_{TARGET_YEAR}_{ts}.xlsx"
@@ -223,17 +231,6 @@ def write_xlsx(yearly, weekly_winners, weekly, raw, alltime_yearly=None, alltime
         weekly_winners.to_excel(w, sheet_name="Weekly Winners", index=False)
         weekly.to_excel(w, sheet_name="Weekly Totals", index=False)
         raw.to_excel(w, sheet_name="Raw Rows", index=False)
-        # Yearly/all-time leaderboard sheets
-        if alltime_yearly is not None:
-            alltime_yearly.to_excel(w, sheet_name="Alltime Leaderboard", index=False)
-
-        # All-time weekly winners/totals and optional raw all-time rows
-        if alltime_weekly_winners is not None:
-            alltime_weekly_winners.to_excel(w, sheet_name="Alltime Weekly Winners", index=False)
-        if alltime_weekly is not None:
-            alltime_weekly.to_excel(w, sheet_name="Alltime Weekly Totals", index=False)
-        if raw_all is not None:
-            raw_all.to_excel(w, sheet_name="Alltime Raw Rows", index=False)
 
     return path
 
@@ -249,39 +246,19 @@ def main():
     expenses = fetch_group_expenses(GROUP_ID)
     print(f"Fetched {len(expenses)} expenses (before filtering)")
 
-    # Per-year (TARGET_YEAR) and all-time
-    df_year = parse_expenses(expenses, TARGET_YEAR)
-    df_all = parse_expenses(expenses, None)
-
-    if df_year.empty and df_all.empty:
-        print("No qualifying expenses found after filtering.")
+    df = parse_expenses(expenses)
+    if df.empty:
+        print("No qualifying expenses found for target year after filtering.")
         return
 
     # Excel can't write timezone-aware datetimes
-    if not df_year.empty:
-        df_year["date"] = pd.to_datetime(df_year["date"], errors="coerce").dt.tz_localize(None)
-    if not df_all.empty:
-        df_all["date"] = pd.to_datetime(df_all["date"], errors="coerce").dt.tz_localize(None)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.tz_localize(None)
 
-    yearly, weekly_winners, weekly = compute_leaderboards(df_year if not df_year.empty else df_all)
-    alltime_yearly, alltime_weekly_winners, alltime_weekly = (
-        compute_leaderboards(df_all) if not df_all.empty else (pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
-    )
-
-    out = write_xlsx(
-        yearly,
-        weekly_winners,
-        weekly,
-        df_year if not df_year.empty else None,
-        alltime_yearly=alltime_yearly if not alltime_yearly.empty else None,
-        alltime_weekly_winners=(alltime_weekly_winners if not alltime_weekly_winners.empty else None),
-        alltime_weekly=(alltime_weekly if not alltime_weekly.empty else None),
-        raw_all=(df_all if not df_all.empty else None),
-    )
+    yearly, weekly_winners, weekly = compute_leaderboards(df)
+    out = write_xlsx(yearly, weekly_winners, weekly, df)
 
     print(f"✅ Done. Created {out}")
-    print(f"Kept rows for {TARGET_YEAR}: {len(df_year)}")
-    print(f"Kept rows (all-time): {len(df_all)}")
+    print(f"Kept rows: {len(df)} (after filtering)")
 
 if __name__ == "__main__":
     main()
