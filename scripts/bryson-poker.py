@@ -47,7 +47,8 @@ EXCLUDE_DESCRIPTION_KEYWORDS = [
     "Poker table", "Beer", "Copag Cards", "Cards", "cards", "Cake", "cake", "Pakoda", "Poker mat"
 ]
 
-OUTPUT_DIR = Path("outputs")
+# OUTPUT_DIR = Path("outputs")
+OUTPUT_DIR = Path("/var/www/poker/outputs")
 BASE_URL = "https://secure.splitwise.com/api/v3.0"
 
 HEADERS = {"Authorization": f"Bearer {SPLITWISE_API_KEY}"}
