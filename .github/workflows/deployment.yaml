@@ -42,5 +42,6 @@ jobs:
             chown -R www-data:www-data /var/www/poker
             chmod -R 755 /var/www/poker
             rm -rf /www/var/poker/outputs/*.*
+            mv /var/www/poker/index.html /var/www/poker/index.html.bak
             python3 /opt/poker/bryson-poker.py
           EOF
