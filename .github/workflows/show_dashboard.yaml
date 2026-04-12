@@ -1,0 +1,30 @@
+name: show dashboard
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 194.113.211.140 >> ~/.ssh/known_hosts
+
+      
+      # Fix permissions (so apache can read, and your script can write JSON)
+      - name: Fix permissions
+        run: |
+          ssh -i ~/.ssh/id_ed25519 root@194.113.211.140 << 'EOF'
+            set -e
+            mv /var/www/poker/index.html.bak /var/www/poker/index.html
+            python3 /opt/poker/bryson-poker.py
+          EOF
